@@ -7,6 +7,7 @@ import { useVrcxStore } from './vrcx';
 import { watchState } from '../services/watchState';
 
 import configRepository from '../services/config';
+import { isEmptySearchQuery, matchSearchQuery, parseSearchQuery } from '../shared/utils/searchQuery';
 
 export const useFeedStore = defineStore('Feed', () => {
     const friendStore = useFriendStore();
@@ -52,74 +53,28 @@ export const useFeedStore = defineStore('Feed', () => {
     init();
 
     function feedSearch(row) {
-        const value = feedTable.value.search.trim().toUpperCase();
-        if (!value) {
+        const raw = feedTable.value.search.trim();
+        if (!raw) {
             return true;
         }
-        if (
-            (value.startsWith('wrld_') || value.startsWith('grp_')) &&
-            String(row.location).toUpperCase().includes(value)
-        ) {
+        if (raw.startsWith('wrld_') || raw.startsWith('grp_')) {
+            return String(row.location ?? '').includes(raw);
+        }
+        const query = parseSearchQuery(raw);
+        if (isEmptySearchQuery(query)) {
             return true;
         }
         switch (row.type) {
             case 'GPS':
-                if (String(row.displayName).toUpperCase().includes(value)) {
-                    return true;
-                }
-                if (String(row.worldName).toUpperCase().includes(value)) {
-                    return true;
-                }
-                return false;
             case 'Online':
-                if (String(row.displayName).toUpperCase().includes(value)) {
-                    return true;
-                }
-                if (String(row.worldName).toUpperCase().includes(value)) {
-                    return true;
-                }
-                return false;
             case 'Offline':
-                if (String(row.displayName).toUpperCase().includes(value)) {
-                    return true;
-                }
-                if (String(row.worldName).toUpperCase().includes(value)) {
-                    return true;
-                }
-                return false;
+                return matchSearchQuery([row.displayName, row.worldName, row.groupName], query);
             case 'Status':
-                if (String(row.displayName).toUpperCase().includes(value)) {
-                    return true;
-                }
-                if (String(row.status).toUpperCase().includes(value)) {
-                    return true;
-                }
-                if (String(row.statusDescription).toUpperCase().includes(value)) {
-                    return true;
-                }
-                return false;
+                return matchSearchQuery([row.displayName, row.status, row.statusDescription], query);
             case 'Avatar':
-                if (String(row.displayName).toUpperCase().includes(value)) {
-                    return true;
-                }
-                if (String(row.avatarName).toUpperCase().includes(value)) {
-                    return true;
-                }
-                return false;
+                return matchSearchQuery([row.displayName, row.avatarName], query);
             case 'Bio':
-                if (String(row.displayName).toUpperCase().includes(value)) {
-                    return true;
-                }
-                if (String(row.bio).toUpperCase().includes(value)) {
-                    return true;
-                }
-                if (String(row.previousBio).toUpperCase().includes(value)) {
-                    return true;
-                }
-                if (row.bioLinks?.some((link) => String(link).toUpperCase().includes(value))) {
-                    return true;
-                }
-                return false;
+                return matchSearchQuery([row.displayName, row.bio, row.previousBio, ...(row.bioLinks ?? [])], query);
         }
         return true;
     }

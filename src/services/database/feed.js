@@ -2,6 +2,7 @@ import { dbVars } from '../database';
 
 import { parseBioLinks } from './userProfile.js';
 import sqliteService from '../sqlite.js';
+import { buildSearchWhere, parseSearchQuery } from '../../shared/utils/searchQuery.js';
 
 const feed = {
     async addGPSToDatabase(entry) {
@@ -143,8 +144,6 @@ const feed = {
         let avatar = true;
         let online = true;
         let offline = true;
-        const aviPublic = search.includes('public');
-        const aviPrivate = search.includes('private');
         if (filters.length > 0) {
             gps = false;
             status = false;
@@ -175,7 +174,23 @@ const feed = {
                 }
             });
         }
-        const searchLike = `%${search}%`;
+        const parsed = parseSearchQuery(search);
+        const gpsWhere = buildSearchWhere(['display_name', 'world_name', 'group_name'], parsed);
+        const statusWhere = buildSearchWhere(['display_name', 'status', 'status_description'], parsed);
+        const bioWhere = buildSearchWhere(['display_name', 'bio', 'bio_links'], parsed);
+        const avatarWhere = buildSearchWhere(['display_name', 'avatar_name'], parsed, {
+            // keep legacy shortcut: "private" / "public" match by avatar ownership
+            extraIncludeClauses: (term) => {
+                const lower = term.toLowerCase();
+                if (lower.includes('private')) {
+                    return ['user_id = owner_id'];
+                }
+                if (lower.includes('public')) {
+                    return ['user_id != owner_id'];
+                }
+                return [];
+            }
+        });
         const selects = [];
         const baseColumns = [
             'id',
@@ -205,28 +220,22 @@ const feed = {
         ].join(', ');
         if (gps) {
             selects.push(
-                `SELECT * FROM (SELECT id, created_at, user_id, display_name, 'GPS' AS type, location, world_name, previous_location, time, group_name, NULL AS status, NULL AS status_description, NULL AS previous_status, NULL AS previous_status_description, NULL AS bio, NULL AS previous_bio, NULL AS owner_id, NULL AS avatar_name, NULL AS current_avatar_image_url, NULL AS current_avatar_thumbnail_image_url, NULL AS previous_current_avatar_image_url, NULL AS previous_current_avatar_thumbnail_image_url, NULL AS bio_links, NULL AS previous_bio_links FROM ${dbVars.userPrefix}_feed_gps WHERE (display_name LIKE @searchLike OR world_name LIKE @searchLike OR group_name LIKE @searchLike) ${dateQuery} ${vipQuery} ORDER BY created_at DESC, id DESC LIMIT @perTable)`
+                `SELECT * FROM (SELECT id, created_at, user_id, display_name, 'GPS' AS type, location, world_name, previous_location, time, group_name, NULL AS status, NULL AS status_description, NULL AS previous_status, NULL AS previous_status_description, NULL AS bio, NULL AS previous_bio, NULL AS owner_id, NULL AS avatar_name, NULL AS current_avatar_image_url, NULL AS current_avatar_thumbnail_image_url, NULL AS previous_current_avatar_image_url, NULL AS previous_current_avatar_thumbnail_image_url, NULL AS bio_links, NULL AS previous_bio_links FROM ${dbVars.userPrefix}_feed_gps WHERE ${gpsWhere.sql} ${dateQuery} ${vipQuery} ORDER BY created_at DESC, id DESC LIMIT @perTable)`
             );
         }
         if (status) {
             selects.push(
-                `SELECT * FROM (SELECT id, created_at, user_id, display_name, 'Status' AS type, NULL AS location, NULL AS world_name, NULL AS previous_location, NULL AS time, NULL AS group_name, status, status_description, previous_status, previous_status_description, NULL AS bio, NULL AS previous_bio, NULL AS owner_id, NULL AS avatar_name, NULL AS current_avatar_image_url, NULL AS current_avatar_thumbnail_image_url, NULL AS previous_current_avatar_image_url, NULL AS previous_current_avatar_thumbnail_image_url, NULL AS bio_links, NULL AS previous_bio_links FROM ${dbVars.userPrefix}_feed_status WHERE (display_name LIKE @searchLike OR status LIKE @searchLike OR status_description LIKE @searchLike) ${dateQuery} ${vipQuery} ORDER BY created_at DESC, id DESC LIMIT @perTable)`
+                `SELECT * FROM (SELECT id, created_at, user_id, display_name, 'Status' AS type, NULL AS location, NULL AS world_name, NULL AS previous_location, NULL AS time, NULL AS group_name, status, status_description, previous_status, previous_status_description, NULL AS bio, NULL AS previous_bio, NULL AS owner_id, NULL AS avatar_name, NULL AS current_avatar_image_url, NULL AS current_avatar_thumbnail_image_url, NULL AS previous_current_avatar_image_url, NULL AS previous_current_avatar_thumbnail_image_url, NULL AS bio_links, NULL AS previous_bio_links FROM ${dbVars.userPrefix}_feed_status WHERE ${statusWhere.sql} ${dateQuery} ${vipQuery} ORDER BY created_at DESC, id DESC LIMIT @perTable)`
             );
         }
         if (bio) {
             selects.push(
-                `SELECT * FROM (SELECT id, created_at, user_id, display_name, 'Bio' AS type, NULL AS location, NULL AS world_name, NULL AS previous_location, NULL AS time, NULL AS group_name, NULL AS status, NULL AS status_description, NULL AS previous_status, NULL AS previous_status_description, bio, previous_bio, NULL AS owner_id, NULL AS avatar_name, NULL AS current_avatar_image_url, NULL AS current_avatar_thumbnail_image_url, NULL AS previous_current_avatar_image_url, NULL AS previous_current_avatar_thumbnail_image_url, bio_links, previous_bio_links FROM ${dbVars.userPrefix}_feed_bio WHERE (display_name LIKE @searchLike OR bio LIKE @searchLike OR bio_links LIKE @searchLike) ${dateQuery} ${vipQuery} ORDER BY created_at DESC, id DESC LIMIT @perTable)`
+                `SELECT * FROM (SELECT id, created_at, user_id, display_name, 'Bio' AS type, NULL AS location, NULL AS world_name, NULL AS previous_location, NULL AS time, NULL AS group_name, NULL AS status, NULL AS status_description, NULL AS previous_status, NULL AS previous_status_description, bio, previous_bio, NULL AS owner_id, NULL AS avatar_name, NULL AS current_avatar_image_url, NULL AS current_avatar_thumbnail_image_url, NULL AS previous_current_avatar_image_url, NULL AS previous_current_avatar_thumbnail_image_url, bio_links, previous_bio_links FROM ${dbVars.userPrefix}_feed_bio WHERE ${bioWhere.sql} ${dateQuery} ${vipQuery} ORDER BY created_at DESC, id DESC LIMIT @perTable)`
             );
         }
         if (avatar) {
-            let avatarQuery = '';
-            if (aviPrivate) {
-                avatarQuery = 'OR user_id = owner_id';
-            } else if (aviPublic) {
-                avatarQuery = 'OR user_id != owner_id';
-            }
             selects.push(
-                `SELECT * FROM (SELECT id, created_at, user_id, display_name, 'Avatar' AS type, NULL AS location, NULL AS world_name, NULL AS previous_location, NULL AS time, NULL AS group_name, NULL AS status, NULL AS status_description, NULL AS previous_status, NULL AS previous_status_description, NULL AS bio, NULL AS previous_bio, owner_id, avatar_name, current_avatar_image_url, current_avatar_thumbnail_image_url, previous_current_avatar_image_url, previous_current_avatar_thumbnail_image_url, NULL AS bio_links, NULL AS previous_bio_links FROM ${dbVars.userPrefix}_feed_avatar WHERE (display_name LIKE @searchLike OR avatar_name LIKE @searchLike) ${avatarQuery} ${dateQuery} ${vipQuery} ORDER BY created_at DESC, id DESC LIMIT @perTable)`
+                `SELECT * FROM (SELECT id, created_at, user_id, display_name, 'Avatar' AS type, NULL AS location, NULL AS world_name, NULL AS previous_location, NULL AS time, NULL AS group_name, NULL AS status, NULL AS status_description, NULL AS previous_status, NULL AS previous_status_description, NULL AS bio, NULL AS previous_bio, owner_id, avatar_name, current_avatar_image_url, current_avatar_thumbnail_image_url, previous_current_avatar_image_url, previous_current_avatar_thumbnail_image_url, NULL AS bio_links, NULL AS previous_bio_links FROM ${dbVars.userPrefix}_feed_avatar WHERE ${avatarWhere.sql} ${dateQuery} ${vipQuery} ORDER BY created_at DESC, id DESC LIMIT @perTable)`
             );
         }
         if (online || offline) {
@@ -239,7 +248,7 @@ const feed = {
                 }
             }
             selects.push(
-                `SELECT * FROM (SELECT id, created_at, user_id, display_name, type, location, world_name, NULL AS previous_location, time, group_name, NULL AS status, NULL AS status_description, NULL AS previous_status, NULL AS previous_status_description, NULL AS bio, NULL AS previous_bio, NULL AS owner_id, NULL AS avatar_name, NULL AS current_avatar_image_url, NULL AS current_avatar_thumbnail_image_url, NULL AS previous_current_avatar_image_url, NULL AS previous_current_avatar_thumbnail_image_url, NULL AS bio_links, NULL AS previous_bio_links FROM ${dbVars.userPrefix}_feed_online_offline WHERE (display_name LIKE @searchLike OR world_name LIKE @searchLike OR group_name LIKE @searchLike) ${query} ${dateQuery} ${vipQuery} ORDER BY created_at DESC, id DESC LIMIT @perTable)`
+                `SELECT * FROM (SELECT id, created_at, user_id, display_name, type, location, world_name, NULL AS previous_location, time, group_name, NULL AS status, NULL AS status_description, NULL AS previous_status, NULL AS previous_status_description, NULL AS bio, NULL AS previous_bio, NULL AS owner_id, NULL AS avatar_name, NULL AS current_avatar_image_url, NULL AS current_avatar_thumbnail_image_url, NULL AS previous_current_avatar_image_url, NULL AS previous_current_avatar_thumbnail_image_url, NULL AS bio_links, NULL AS previous_bio_links FROM ${dbVars.userPrefix}_feed_online_offline WHERE ${gpsWhere.sql} ${query} ${dateQuery} ${vipQuery} ORDER BY created_at DESC, id DESC LIMIT @perTable)`
             );
         }
         if (selects.length === 0) {
@@ -247,7 +256,7 @@ const feed = {
         }
         const feedDatabase = [];
         const args = {
-            '@searchLike': searchLike,
+            ...gpsWhere.args,
             '@limit': maxEntries,
             '@perTable': maxEntries,
             ...vipArgs
@@ -310,6 +319,39 @@ const feed = {
             args
         );
         return feedDatabase;
+    },
+
+    /**
+     * Latest location-bearing feed event (GPS move or Online) per user.
+     * Used to recover "arrived at current location" times after a restart.
+     *
+     * @param {string[]} userIds
+     * @returns {Promise<Map<string, { location: string; createdAt: string }>>}
+     */
+    async getLatestLocationEvents(userIds) {
+        const result = new Map();
+        if (!userIds.length) {
+            return result;
+        }
+        const args = {};
+        const placeholders = userIds.map((id, i) => {
+            const key = `@u_${i}`;
+            args[key] = id;
+            return key;
+        });
+        const inList = placeholders.join(', ');
+        await sqliteService.execute(
+            (dbRow) => {
+                const [userId, location, createdAt] = dbRow;
+                const prev = result.get(userId);
+                if (!prev || prev.createdAt < createdAt) {
+                    result.set(userId, { location, createdAt });
+                }
+            },
+            `SELECT user_id, location, MAX(created_at) FROM ${dbVars.userPrefix}_feed_gps WHERE user_id IN (${inList}) GROUP BY user_id UNION ALL SELECT user_id, location, MAX(created_at) FROM ${dbVars.userPrefix}_feed_online_offline WHERE type = 'Online' AND user_id IN (${inList}) GROUP BY user_id`,
+            args
+        );
+        return result;
     },
 
     async lookupFeedDatabase(filters, vipList, maxEntries = dbVars.maxTableSize) {

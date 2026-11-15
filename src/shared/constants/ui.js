@@ -16,6 +16,20 @@ const navDefinitions = [
         routeName: 'friends-locations'
     },
     {
+        key: 'favorite-instances',
+        icon: 'ri-star-smile-line',
+        tooltip: 'nav_tooltip.favorite_instances',
+        labelKey: 'nav_tooltip.favorite_instances',
+        routeName: 'favorite-instances'
+    },
+    {
+        key: 'group-instances',
+        icon: 'ri-team-line',
+        tooltip: 'nav_tooltip.group_instances',
+        labelKey: 'nav_tooltip.group_instances',
+        routeName: 'group-instances'
+    },
+    {
         key: 'game-log',
         icon: 'ri-history-line',
         tooltip: 'nav_tooltip.game_log',

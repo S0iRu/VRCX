@@ -79,7 +79,9 @@
         "help_support": "ヘルプ & サポート",
         "expand_menu": "メニューを展開",
         "collapse_menu": "メニューを折りたたむ",
-        "toggle_theme": "テーマを切り替える"
+        "toggle_theme": "テーマを切り替える",
+        "favorite_instances": "お気に入りのインスタンス",
+        "group_instances": "グループインスタンス"
     },
     "nav_menu": {
         "resources": "お役立ちリンク",
@@ -259,7 +261,7 @@
         },
         "feed": {
             "favorites_only_tooltip": "お気に入りのみ",
-            "search_placeholder": "検索...",
+            "search_placeholder": "検索（-語 で除外）",
             "filters": {
                 "GPS": "現在地",
                 "Online": "オンライン",
@@ -1294,6 +1296,24 @@
                     }
                 }
             }
+        },
+        "favorite_instances": {
+            "header": "お気に入りのインスタンス",
+            "summary": "{instances} インスタンス · お気に入り {friends} 人",
+            "search_placeholder": "ワールド・フレンドを検索",
+            "empty": "現在、参加可能なインスタンスにいるお気に入りフレンドはいません。",
+            "other_friends": "その他のフレンド",
+            "private": "プライベートワールド",
+            "offline": "オフラインのお気に入り"
+        },
+        "group_instances": {
+            "header": "グループインスタンス",
+            "summary": "{groups} グループ · {instances} インスタンス",
+            "search_placeholder": "グループ・ワールド・フレンドを検索",
+            "empty": "開いているグループインスタンスはありません。",
+            "last_updated": "{time} 更新",
+            "section_counts": "{instances} インスタンス · フレンド {friends} 人",
+            "open_group": "グループ"
         }
     },
     "dialog": {

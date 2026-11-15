@@ -9,6 +9,8 @@ import Feed from './../views/Feed/Feed.vue';
 import FriendList from './../views/FriendList/FriendList.vue';
 import FriendLog from './../views/FriendLog/FriendLog.vue';
 import FriendsLocations from './../views/FriendsLocations/FriendsLocations.vue';
+import FavoriteInstances from './../views/FavoriteInstances/FavoriteInstances.vue';
+import GroupInstances from './../views/GroupInstances/GroupInstances.vue';
 import Dashboard from './../views/Dashboard/Dashboard.vue';
 import Gallery from './../views/Tools/Gallery.vue';
 import GameLog from './../views/GameLog/GameLog.vue';
@@ -42,6 +44,16 @@ const routes = [
                 path: 'friends-locations',
                 name: 'friends-locations',
                 component: FriendsLocations
+            },
+            {
+                path: 'favorite-instances',
+                name: 'favorite-instances',
+                component: FavoriteInstances
+            },
+            {
+                path: 'group-instances',
+                name: 'group-instances',
+                component: GroupInstances
             },
             { path: 'game-log', name: 'game-log', component: GameLog },
             { path: 'player-list', name: 'player-list', component: PlayerList },

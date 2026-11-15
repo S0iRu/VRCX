@@ -84,7 +84,9 @@
         "expand_menu": "Expand Menu",
         "collapse_menu": "Collapse Menu",
         "expand_sidebar": "Expand Sidebar",
-        "toggle_theme": "Toggle Theme"
+        "toggle_theme": "Toggle Theme",
+        "favorite_instances": "Favorite Instances",
+        "group_instances": "Group Instances"
     },
     "nav_menu": {
         "resources": "RESOURCES",
@@ -276,7 +278,7 @@
         },
         "feed": {
             "favorites_only_tooltip": "Filter favorites only",
-            "search_placeholder": "Search",
+            "search_placeholder": "Search (-word to exclude)",
             "filters": {
                 "GPS": "GPS",
                 "Online": "Online",
@@ -1375,6 +1377,24 @@
                     }
                 }
             }
+        },
+        "favorite_instances": {
+            "header": "Favorite Instances",
+            "summary": "{instances} instances · {friends} favorites",
+            "search_placeholder": "Search world or friend",
+            "empty": "No favorite friends are in a joinable instance right now.",
+            "other_friends": "Other friends",
+            "private": "Private world",
+            "offline": "Offline favorites"
+        },
+        "group_instances": {
+            "header": "Group Instances",
+            "summary": "{groups} groups · {instances} instances",
+            "search_placeholder": "Search group, world or friend",
+            "empty": "No open group instances.",
+            "last_updated": "Updated {time}",
+            "section_counts": "{instances} instances · {friends} friends",
+            "open_group": "Group"
         }
     },
     "dialog": {

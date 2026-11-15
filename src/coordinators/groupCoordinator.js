@@ -1093,15 +1093,23 @@ export async function handleGroupUserInstances(args) {
             json.$fetchedAt = args.json.fetchedAt;
         }
         const instanceRef = instanceStore.applyInstance(json);
-        const groupRef = groupStore.cachedGroups.get(json.ownerId);
+        let groupRef = groupStore.cachedGroups.get(json.ownerId);
         if (typeof groupRef === 'undefined') {
-            if (watchState.isFriendsLoaded) {
-                const args = await groupRequest.getGroup({
+            if (!watchState.isFriendsLoaded) {
+                continue;
+            }
+            try {
+                const groupArgs = await groupRequest.getGroup({
                     groupId: json.ownerId
                 });
-                applyGroup(args.json);
+                groupRef = applyGroup(groupArgs.json);
+            } catch (err) {
+                console.error('handleGroupUserInstances: failed to fetch group', json.ownerId, err);
+                continue;
             }
-            return;
+            if (!groupRef) {
+                continue;
+            }
         }
         groupStore.groupInstances.push({
             group: groupRef,
