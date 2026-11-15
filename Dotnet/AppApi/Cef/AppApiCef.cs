@@ -112,7 +112,7 @@ namespace VRCX
 
         public override bool CheckForUpdateExe()
         {
-            return File.Exists(Path.Join(Program.AppDataDirectory, "update.exe"));
+            return File.Exists(Update.UpdateExecutable);
         }
 
         public override void ExecuteVrOverlayFunction(string function, string json)

@@ -13,6 +13,8 @@ const VRChatCameraResolutions = [
     { name: '7680x4320 (8K)', width: 7680, height: 4320 }
 ];
 
+import { FORK_BRANCH, FORK_BRANCH_INFO } from './fork';
+
 const branches = {
     Stable: {
         name: 'Stable',
@@ -23,7 +25,8 @@ const branches = {
         name: 'Nightly',
         urlReleases: 'https://api0.vrcx.app/releases/nightly',
         urlLatest: 'https://api0.vrcx.app/releases/nightly/latest'
-    }
+    },
+    [FORK_BRANCH]: FORK_BRANCH_INFO
     // LinuxTest: {
     //     name: 'LinuxTest',
     //     urlReleases: 'https://api.github.com/repos/rs189/VRCX/releases',

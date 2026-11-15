@@ -17,9 +17,14 @@ namespace VRCX
     public class Update
     {
         private static readonly Logger logger = LogManager.GetCurrentClassLogger();
-        private static readonly string VrcxSetupExecutable = Path.Join(Program.AppDataDirectory, "VRCX_Setup.exe");
-        private static readonly string UpdateExecutable = Path.Join(Program.AppDataDirectory, "update.exe");
-        private static readonly string TempDownload = Path.Join(Program.AppDataDirectory, "tempDownload");
+        // Fork build: use file names distinct from the official build. Both builds share
+        // %APPDATA%\VRCX, so the official updater must never pick up (and run) a fork
+        // installer and vice versa.
+        public const string SetupProcessName = "VRCX_Fork_Setup";
+        public const string UpdateFileName = "update-fork.exe";
+        private static readonly string VrcxSetupExecutable = Path.Join(Program.AppDataDirectory, SetupProcessName + ".exe");
+        public static readonly string UpdateExecutable = Path.Join(Program.AppDataDirectory, UpdateFileName);
+        private static readonly string TempDownload = Path.Join(Program.AppDataDirectory, "tempDownloadFork");
         private static readonly HttpClient httpClient;
         private static CancellationToken _cancellationToken;
         public static int UpdateProgress;
@@ -48,7 +53,7 @@ namespace VRCX
 
         public static void Check()
         {
-            if (Process.GetProcessesByName("VRCX_Setup").Length > 0)
+            if (Process.GetProcessesByName(SetupProcessName).Length > 0)
                 Environment.Exit(0);
 
             if (File.Exists(TempDownload))

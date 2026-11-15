@@ -2,6 +2,7 @@ export * from './emoji';
 export * from './feedFilters';
 export * from './language';
 export * from './settings';
+export * from './fork';
 export * from './group';
 export * from './user';
 export * from './instance';

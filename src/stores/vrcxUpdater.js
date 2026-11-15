@@ -4,13 +4,17 @@ import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
 
 import { logWebRequest } from '../services/appConfig';
-import { branches } from '../shared/constants';
+import { FORK_BRANCH, FORK_BUILD, branches, isNewerRelease } from '../shared/constants';
 import { getWhatsNewRelease, normalizeReleaseVersion } from '../shared/constants/whatsNewReleases';
 import { changeLogRemoveLinks } from '../shared/utils';
 
 import configRepository from '../services/config';
 
 import * as workerTimers from 'worker-timers';
+
+// The fork shares the config DB with the official build: keep its own "last seen
+// version" so switching between the two doesn't re-trigger What's New dialogs.
+const LAST_VERSION_KEY = FORK_BUILD ? 'VRCX_lastVRCXVersion_fork' : 'VRCX_lastVRCXVersion';
 
 const emptyWhatsNewDialog = () => ({
     visible: false,
@@ -124,10 +128,18 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
      */
     function setBranch(value) {
         branch.value = value;
+        if (FORK_BUILD) {
+            // never persist: VRCX_branch is shared with the official build
+            return;
+        }
         configRepository.setString('VRCX_branch', value);
     }
 
     async function initBranch() {
+        if (FORK_BUILD) {
+            branch.value = FORK_BRANCH;
+            return;
+        }
         if (!appVersion.value) {
             return;
         }
@@ -140,12 +152,12 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
     }
 
     async function hasVersionChanged() {
-        const lastVersion = await configRepository.getString('VRCX_lastVRCXVersion', '');
+        const lastVersion = await configRepository.getString(LAST_VERSION_KEY, '');
         return lastVersion !== currentVersion.value;
     }
 
     async function markCurrentVersionAsSeen() {
-        await configRepository.setString('VRCX_lastVRCXVersion', currentVersion.value);
+        await configRepository.setString(LAST_VERSION_KEY, currentVersion.value);
     }
 
     async function syncCurrentVersionState() {
@@ -160,7 +172,7 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
         if (branch.value !== 'Stable' || !isRecognizedStableReleaseVersion()) {
             return false;
         }
-        const lastVersion = await configRepository.getString('VRCX_lastVRCXVersion', '');
+        const lastVersion = await configRepository.getString(LAST_VERSION_KEY, '');
         return Boolean(lastVersion) && lastVersion !== currentVersion.value;
     }
 
@@ -222,6 +234,11 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
             await configRepository.setString('VRCX_id', vrcxId.value);
         }
     }
+    function updateRequestHeaders() {
+        // the fork talks to the GitHub API directly; don't send the VRCX id there
+        return FORK_BUILD ? {} : { 'VRCX-ID': vrcxId.value };
+    }
+
     function getAssetOfInterest(assets) {
         let downloadUrl = '';
         let hashString = '';
@@ -234,7 +251,8 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
                 WINDOWS &&
                 (asset.name.endsWith('Setup_x64.exe') || asset.name.endsWith('Setup.exe')) &&
                 (asset.content_type === 'application/x-msdownload' ||
-                    asset.content_type === 'application/x-msdos-program')
+                    asset.content_type === 'application/x-msdos-program' ||
+                    asset.content_type === 'application/octet-stream')
             ) {
                 downloadUrl = asset.browser_download_url;
                 if (asset.digest && asset.digest.startsWith('sha256:')) {
@@ -283,9 +301,7 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
             response = await webApiService.execute({
                 url,
                 method: 'GET',
-                headers: {
-                    'VRCX-ID': vrcxId.value
-                }
+                headers: updateRequestHeaders()
             });
             json = JSON.parse(response.data);
         } catch (error) {
@@ -316,7 +332,7 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
             if (releaseName === pendingVRCXInstall.value) {
                 // update already downloaded
                 VRCXUpdateDialog.value.updatePendingIsLatest = true;
-            } else if (releaseName > currentVersion.value) {
+            } else if (isNewerRelease(releaseName, currentVersion.value)) {
                 const { downloadUrl, hashString, size } = getAssetOfInterest(json.assets);
                 if (!downloadUrl) {
                     return true;
@@ -364,9 +380,7 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
             response = await webApiService.execute({
                 url,
                 method: 'GET',
-                headers: {
-                    'VRCX-ID': vrcxId.value
-                }
+                headers: updateRequestHeaders()
             });
             json = JSON.parse(response.data);
         } catch (error) {
