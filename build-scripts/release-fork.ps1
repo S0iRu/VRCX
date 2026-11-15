@@ -17,9 +17,13 @@
 
     # build and run the installer locally
     pwsh build-scripts\release-fork.ps1 -Install
+
+    # CI (.github/workflows/fork-release.yml): publish the already pushed commit
+    pwsh build-scripts\release-fork.ps1 -Publish -NoPush
 #>
 param(
     [switch]$Publish,
+    [switch]$NoPush,
     [switch]$Install,
     [string]$Repo = 'S0iRu/VRCX'
 )
@@ -83,9 +87,11 @@ Step "Installer: $setup"
 
 # ---- publish -------------------------------------------------------------
 if ($Publish) {
-    $branch = (git rev-parse --abbrev-ref HEAD).Trim()
-    Step "Pushing $branch"
-    Run git @('push', 'origin', $branch)
+    if (-not $NoPush) {
+        $branch = (git rev-parse --abbrev-ref HEAD).Trim()
+        Step "Pushing $branch"
+        Run git @('push', 'origin', $branch)
+    }
 
     $sha = (git rev-parse HEAD).Trim()
     $lastTag = (gh release list --repo $Repo --limit 1 --json tagName | ConvertFrom-Json).tagName
