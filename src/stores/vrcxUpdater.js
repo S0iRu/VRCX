@@ -276,6 +276,14 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
         }
         return { downloadUrl, hashString, size };
     }
+    /**
+     * Release source for the current branch. The fork build always reads its own
+     * GitHub releases, even if something switched `branch` to Stable/Nightly.
+     */
+    function currentBranchInfo() {
+        return branches[FORK_BUILD ? FORK_BRANCH : branch.value];
+    }
+
     async function checkForVRCXUpdate() {
         if (
             !currentVersion.value ||
@@ -293,7 +301,7 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
             // handle invalid branch
             setBranch('Stable');
         }
-        const url = branches[branch.value].urlLatest;
+        const url = currentBranchInfo().urlLatest;
         checkingForVRCXUpdate.value = true;
         let response;
         let json;
@@ -372,7 +380,7 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
 
     async function loadBranchVersions() {
         const D = VRCXUpdateDialog.value;
-        const url = branches[branch.value].urlReleases;
+        const url = currentBranchInfo().urlReleases;
         checkingForVRCXUpdate.value = true;
         let response;
         let json;

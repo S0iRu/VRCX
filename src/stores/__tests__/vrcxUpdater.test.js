@@ -87,3 +87,33 @@ describe('useVRCXUpdaterStore.setAutoUpdateVRCX', () => {
         expect(mocks.configRepository.setString).toHaveBeenCalledWith('VRCX_autoUpdateVRCX', 'Notify');
     });
 });
+
+describe('useVRCXUpdaterStore.loadBranchVersions (fork build)', () => {
+    beforeEach(async () => {
+        mocks.configRepository.getString.mockImplementation((key, defaultValue) =>
+            Promise.resolve(key === 'VRCX_autoUpdateVRCX' ? 'Off' : (defaultValue ?? ''))
+        );
+        mocks.configRepository.setString.mockResolvedValue(undefined);
+        globalThis.AppApi = {
+            GetVersion: vi.fn().mockResolvedValue('VRCX 2026.11.14.3')
+        };
+        globalThis.webApiService = {
+            execute: vi.fn().mockResolvedValue({ status: 200, data: '[]' })
+        };
+        setActivePinia(createPinia());
+        useVRCXUpdaterStore();
+        await flushPromises();
+        vi.clearAllMocks();
+    });
+
+    test('reads fork releases even if branch was switched to Stable', async () => {
+        const store = useVRCXUpdaterStore();
+        store.branch = 'Stable';
+
+        await store.loadBranchVersions();
+
+        expect(globalThis.webApiService.execute).toHaveBeenCalledWith(
+            expect.objectContaining({ url: 'https://api.github.com/repos/S0iRu/VRCX/releases' })
+        );
+    });
+});

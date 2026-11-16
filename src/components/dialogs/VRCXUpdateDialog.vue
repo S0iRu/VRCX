@@ -16,7 +16,11 @@
                         <br />
                         <span>{{ t('dialog.vrcx_updater.ready_for_update') }}</span>
                     </div>
-                    <Tabs :model-value="branch" class="w-full" @update:modelValue="handleBranchChange">
+                    <Tabs
+                        v-if="!FORK_BUILD"
+                        :model-value="branch"
+                        class="w-full"
+                        @update:modelValue="handleBranchChange">
                         <TabsList class="grid w-full grid-cols-2">
                             <TabsTrigger value="Stable">{{ t('dialog.vrcx_updater.branch_stable') }}</TabsTrigger>
                             <TabsTrigger value="Nightly">{{ t('dialog.vrcx_updater.branch_nightly') }}</TabsTrigger>
@@ -91,6 +95,7 @@
     import { storeToRefs } from 'pinia';
     import { useI18n } from 'vue-i18n';
 
+    import { FORK_BUILD } from '../../shared/constants';
     import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
     import { useVRCXUpdaterStore } from '../../stores';
 
@@ -110,6 +115,10 @@
     const { t } = useI18n();
 
     const handleBranchChange = (value) => {
+        // the fork only ships from its own releases; never switch to the official channels
+        if (FORK_BUILD) {
+            return;
+        }
         if (!value || value === branch.value) {
             return;
         }
