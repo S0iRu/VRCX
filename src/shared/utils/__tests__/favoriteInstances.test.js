@@ -106,11 +106,15 @@ describe('getStayStart', () => {
         expect(getStayStart(f)).toBe(5);
     });
 
-    test('uses an earlier feed arrival only for the same location', () => {
-        const ref = { location: LOC_A, $location_at: 1000 };
-        expect(getStayStart({ ref, arrival: { location: LOC_A, at: 400 } })).toBe(400);
-        expect(getStayStart({ ref, arrival: { location: LOC_B, at: 400 } })).toBe(1000);
-        expect(getStayStart({ ref, arrival: { location: LOC_A, at: 2000 } })).toBe(1000);
+    test('uses $location_at like the user dialog, ignoring any feed arrival', () => {
+        const ref = { location: 'private', $location_at: 1000 };
+        expect(getStayStart({ ref })).toBe(1000);
+        expect(getStayStart({ ref, arrival: { location: 'private', at: 400 } })).toBe(1000);
+    });
+
+    test('uses $travelingToTime while traveling', () => {
+        const ref = { location: 'traveling', $location_at: 1000, $travelingToTime: 3000 };
+        expect(getStayStart({ ref })).toBe(3000);
     });
 
     test('returns 0 when unknown', () => {

@@ -321,39 +321,6 @@ const feed = {
         return feedDatabase;
     },
 
-    /**
-     * Latest location-bearing feed event (GPS move or Online) per user.
-     * Used to recover "arrived at current location" times after a restart.
-     *
-     * @param {string[]} userIds
-     * @returns {Promise<Map<string, { location: string; createdAt: string }>>}
-     */
-    async getLatestLocationEvents(userIds) {
-        const result = new Map();
-        if (!userIds.length) {
-            return result;
-        }
-        const args = {};
-        const placeholders = userIds.map((id, i) => {
-            const key = `@u_${i}`;
-            args[key] = id;
-            return key;
-        });
-        const inList = placeholders.join(', ');
-        await sqliteService.execute(
-            (dbRow) => {
-                const [userId, location, createdAt] = dbRow;
-                const prev = result.get(userId);
-                if (!prev || prev.createdAt < createdAt) {
-                    result.set(userId, { location, createdAt });
-                }
-            },
-            `SELECT user_id, location, MAX(created_at) FROM ${dbVars.userPrefix}_feed_gps WHERE user_id IN (${inList}) GROUP BY user_id UNION ALL SELECT user_id, location, MAX(created_at) FROM ${dbVars.userPrefix}_feed_online_offline WHERE type = 'Online' AND user_id IN (${inList}) GROUP BY user_id`,
-            args
-        );
-        return result;
-    },
-
     async lookupFeedDatabase(filters, vipList, maxEntries = dbVars.maxTableSize) {
         let vipQuery = '';
         const vipArgs = {};

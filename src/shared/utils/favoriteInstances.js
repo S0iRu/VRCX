@@ -28,11 +28,10 @@ export function getJoinedAt(friend) {
 /**
  * Start time for the stay timer, using the same rule as the sidebar's FriendItem
  * (traveling -> $travelingToTime, otherwise $location_at). Reads the live user ref
- * when available because VRCX writes these timestamps asynchronously. A feed-DB
- * arrival time for the current location is preferred when it is earlier (restores
- * real stay times after an app restart).
+ * when available because VRCX writes these timestamps asynchronously. Matches the
+ * user dialog / sidebar timers exactly.
  *
- * @param {FriendEntry & { live?: { ref?: object }; arrival?: { location: string; at: number } | null }} friend
+ * @param {FriendEntry & { live?: { ref?: object } }} friend
  * @returns {number} Epoch ms, or 0 when unknown
  */
 export function getStayStart(friend) {
@@ -41,12 +40,7 @@ export function getStayStart(friend) {
     if (ref.location === 'traveling') {
         return ref.$travelingToTime || 0;
     }
-    let at = ref.$location_at || 0;
-    const arrival = friend.arrival;
-    if (arrival && arrival.location === ref.location && (!at || arrival.at < at)) {
-        at = arrival.at;
-    }
-    return at;
+    return ref.$location_at || 0;
 }
 
 /**
