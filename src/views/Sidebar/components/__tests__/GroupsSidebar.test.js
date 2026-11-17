@@ -149,4 +149,24 @@ describe('GroupsSidebar.vue', () => {
         });
         expect(mocks.toastSuccess).toHaveBeenCalledWith('message.invite.self_sent');
     });
+
+    it('splits instances into one header per group when refs only have id', () => {
+        const original = mocks.groupInstances.value;
+        const makeRef = (id, name, instId) => ({
+            group: { id, name, iconUrl: '' },
+            instance: { id: instId, ownerId: id, userCount: 1, capacity: 16, location: `wrld_1:${instId}` }
+        });
+        mocks.groupInstances.value = [
+            makeRef('grp_a', 'Group A', 'a1'),
+            makeRef('grp_b', 'Group B', 'b1'),
+            makeRef('grp_a', 'Group A', 'a2')
+        ];
+        try {
+            const text = mount(GroupsSidebar).text();
+            expect(text).toContain('Group A – 2');
+            expect(text).toContain('Group B – 1');
+        } finally {
+            mocks.groupInstances.value = original;
+        }
+    });
 });

@@ -1,9 +1,20 @@
 /**
+ * Group refs from cachedGroups only carry `id`; `groupId` exists only on
+ * refs that went through the user group list, so check both.
+ *
+ * @param {object} ref - Group instance ref ({ group, instance })
+ * @returns {string} The groupId, or empty string
+ */
+export function getGroupRefId(ref) {
+    return ref?.group?.id || ref?.group?.groupId || ref?.instance?.ownerId || '';
+}
+
+/**
  * @param {Array} group - Array of group instance refs
  * @returns {string} The groupId, or empty string
  */
 export function getGroupId(group) {
-    return group[0]?.group?.groupId || '';
+    return getGroupRefId(group[0]);
 }
 
 /**

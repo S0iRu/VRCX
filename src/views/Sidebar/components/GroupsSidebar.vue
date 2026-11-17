@@ -99,7 +99,13 @@
         ContextMenuItem,
         ContextMenuTrigger
     } from '../../../components/ui/context-menu';
-    import { buildGroupHeaderRow, buildGroupItemRow, estimateGroupRowSize, getGroupId } from '../groupsSidebarUtils';
+    import {
+        buildGroupHeaderRow,
+        buildGroupItemRow,
+        estimateGroupRowSize,
+        getGroupId,
+        getGroupRefId
+    } from '../groupsSidebarUtils';
     import { convertFileUrlToImageUrl, parseLocation } from '../../../shared/utils';
     import { useInviteChecks } from '../../../composables/useInviteChecks';
     import { useAppearanceSettingsStore, useGroupStore, useLaunchStore } from '../../../stores';
@@ -125,15 +131,15 @@
         const groupMap = new Map();
 
         groupInstances.value.forEach((ref) => {
-            const groupId = ref.group.groupId;
+            const groupId = getGroupRefId(ref);
             if (!groupMap.has(groupId)) {
                 groupMap.set(groupId, []);
             }
             groupMap.get(groupId).push(ref);
 
-            if (!groupInstancesCfg.value[ref.group?.groupId]) {
+            if (!groupInstancesCfg.value[groupId]) {
                 groupInstancesCfg.value = {
-                    [ref.group.groupId]: {
+                    [groupId]: {
                         isCollapsed: false
                     },
                     ...groupInstancesCfg.value

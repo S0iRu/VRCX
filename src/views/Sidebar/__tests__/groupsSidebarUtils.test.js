@@ -10,6 +10,15 @@ describe('getGroupId', () => {
         expect(getGroupId(group)).toBe('grp_abc');
     });
 
+    test('prefers group.id (cached group refs have no groupId)', () => {
+        expect(getGroupId([{ group: { id: 'grp_id' } }])).toBe('grp_id');
+        expect(getGroupId([{ group: { id: 'grp_id', groupId: 'grp_other' } }])).toBe('grp_id');
+    });
+
+    test('falls back to instance.ownerId', () => {
+        expect(getGroupId([{ group: {}, instance: { ownerId: 'grp_owner' } }])).toBe('grp_owner');
+    });
+
     test('returns empty string for empty array', () => {
         expect(getGroupId([])).toBe('');
     });
