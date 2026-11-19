@@ -253,7 +253,7 @@
 <style scoped>
     .instance-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
         gap: 12px;
     }
 </style>

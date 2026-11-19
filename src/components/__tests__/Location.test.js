@@ -382,4 +382,32 @@ describe('Location.vue', () => {
             expect(wrapper.text()).not.toContain('Restricted');
         });
     });
+
+    describe('stacked', () => {
+        test('puts the world name and the access type / group name on separate lines', () => {
+            const wrapper = mountLocation({
+                location: 'wrld_12345:67890~group(grp_abc)~groupAccessType(public)',
+                hint: 'My World',
+                grouphint: 'My Group',
+                stacked: true
+            });
+            const lines = wrapper.findAll('.flex-col > span');
+            expect(lines).toHaveLength(2);
+            expect(lines[0].text()).toBe('My World');
+            expect(lines[1].text()).toContain('My Group');
+            expect(lines[1].text()).not.toContain('My World');
+        });
+
+        test('stays on one line for states without an access type', () => {
+            const wrapper = mountLocation({ location: 'private', stacked: true });
+            expect(wrapper.find('.flex-col').exists()).toBe(false);
+            expect(wrapper.text()).toContain('Private');
+        });
+
+        test('stays on one line when not stacked', () => {
+            const wrapper = mountLocation({ location: 'wrld_12345:67890', hint: 'My World' });
+            expect(wrapper.find('.flex-col').exists()).toBe(false);
+            expect(wrapper.text()).toContain('My World · Public');
+        });
+    });
 });

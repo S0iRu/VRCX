@@ -8,12 +8,20 @@
                 loading="lazy"
                 @click="openWorld" />
             <div class="flex min-w-0 flex-1 flex-col gap-1">
-                <Location class="font-medium" :location="location" :grouphint="groupHint" enable-context-menu link />
+                <Location
+                    class="font-medium"
+                    :location="location"
+                    :grouphint="groupHint"
+                    enable-context-menu
+                    link
+                    stacked />
                 <div v-if="instance?.displayName" class="truncate text-xs text-muted-foreground">
                     {{ instance.displayName }}
                 </div>
+                <!-- `class` goes to the count pill; `style` reaches the root so a narrow card wraps the pill -->
                 <InstanceActionBar
                     class="text-sm"
+                    style="flex-wrap: wrap; row-gap: 4px"
                     :location="location"
                     :launch-location="location"
                     :instance-location="location"

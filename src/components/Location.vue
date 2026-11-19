@@ -28,7 +28,22 @@
                                 class="inline-flex min-w-0 flex-nowrap items-center overflow-hidden truncate"
                                 @click="handleShowWorldDialog">
                                 <Spinner v-if="isTraveling" class="mr-1 shrink-0" />
-                                <span class="min-w-0 flex-1 truncate">
+                                <span v-if="stacked && secondaryText" class="flex min-w-0 flex-1 flex-col">
+                                    <span class="truncate">{{ primaryText }}</span>
+                                    <span class="truncate">
+                                        <span>{{ secondaryText }}</span>
+                                        <span v-if="showInstanceIdInLocation && instanceName" class="ml-1">{{
+                                            `· #${instanceName}`
+                                        }}</span>
+                                        <span
+                                            v-if="groupName"
+                                            class="cursor-pointer"
+                                            @click.stop="handleShowGroupDialog">
+                                            ({{ groupName }})
+                                        </span>
+                                    </span>
+                                </span>
+                                <span v-else class="min-w-0 flex-1 truncate">
                                     <span>{{ text }}</span>
                                     <span v-if="showInstanceIdInLocation && instanceName" class="ml-1">{{
                                         `· #${instanceName}`
@@ -147,10 +162,17 @@
         enableContextMenu: {
             type: Boolean,
             default: false
+        },
+        // Show the world name and the access type / group name on two lines
+        stacked: {
+            type: Boolean,
+            default: false
         }
     });
 
     const text = ref('');
+    const primaryText = ref('');
+    const secondaryText = ref('');
     const region = ref('');
     const regionTitle = computed(() => (regionLocaleKeyMap[region.value] ? t(regionLocaleKeyMap[region.value]) : ''));
     const strict = ref(false);
@@ -203,6 +225,8 @@
 
     function resetState() {
         text.value = '';
+        primaryText.value = '';
+        secondaryText.value = '';
         region.value = '';
         strict.value = false;
         ageGate.value = false;
@@ -298,10 +322,24 @@
      * @param L
      */
     function setText(L) {
-        const accessTypeLabel = getAccessTypeLabel(L.accessTypeName);
         const cachedRef = L.worldId ? cachedWorlds.get(L.worldId) : undefined;
-        const worldName = typeof cachedRef !== 'undefined' ? cachedRef.name : undefined;
+        applyText(L, typeof cachedRef !== 'undefined' ? cachedRef.name : undefined);
 
+        if (L.worldId && typeof cachedRef === 'undefined') {
+            getWorldName(L.worldId).then((name) => {
+                if (!isDisposed && name && currentInstanceId() === L.tag) {
+                    applyText(L, name);
+                }
+            });
+        }
+    }
+
+    /**
+     * @param L
+     * @param {string | undefined} worldName
+     */
+    function applyText(L, worldName) {
+        const accessTypeLabel = getAccessTypeLabel(L.accessTypeName);
         text.value = getLocationText(L, {
             hint: props.hint,
             worldName,
@@ -309,18 +347,12 @@
             t
         });
 
-        if (L.worldId && typeof cachedRef === 'undefined') {
-            getWorldName(L.worldId).then((name) => {
-                if (!isDisposed && name && currentInstanceId() === L.tag) {
-                    text.value = getLocationText(L, {
-                        hint: props.hint,
-                        worldName: name,
-                        accessTypeLabel: getAccessTypeLabel(L.accessTypeName),
-                        t
-                    });
-                }
-            });
-        }
+        // Split form for `stacked`; same cases as getLocationText's
+        // "<name> · <access type>" output, everything else stays one line.
+        const name = props.hint || (L.worldId ? worldName || L.worldId : '');
+        const isSplittable = !L.isOffline && !L.isPrivate && !L.isTraveling && L.instanceId && name;
+        primaryText.value = isSplittable ? name : '';
+        secondaryText.value = isSplittable ? accessTypeLabel : '';
     }
 
     function handleShowWorldDialog() {
