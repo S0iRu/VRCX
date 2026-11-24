@@ -33,6 +33,12 @@
             </div>
         </div>
 
+        <InstanceMemberRow
+            v-if="creator"
+            :friend="creator"
+            :show-timer="false"
+            :subtitle="t('dialog.world.instances.instance_creator')" />
+
         <div v-if="favorites.length" class="flex flex-col">
             <InstanceMemberRow
                 v-for="friend in favorites"
@@ -57,13 +63,14 @@
 </template>
 
 <script setup>
-    import { computed } from 'vue';
+    import { computed, ref, watch } from 'vue';
     import { storeToRefs } from 'pinia';
     import { useI18n } from 'vue-i18n';
     import { Card } from '@/components/ui/card';
 
     import { convertFileUrlToImageUrl, parseLocation } from '../shared/utils';
-    import { useLocationStore, useWorldStore } from '../stores';
+    import { useLocationStore, useUserStore, useWorldStore } from '../stores';
+    import { userRequest } from '../api';
     import { showWorldDialog } from '../coordinators/worldCoordinator';
 
     import InstanceActionBar from './InstanceActionBar.vue';
@@ -89,7 +96,39 @@
     const worldStore = useWorldStore();
 
     const parsed = computed(() => parseLocation(props.location));
-    const ownerId = computed(() => parsed.value.userId ?? null);
+    // Same rule as the world dialog: the location tag's user id, falling back to
+    // the fetched instance's ownerId (hidden/friends+ tags may omit it). Group
+    // instances are owned by the group, not a user.
+    const ownerId = computed(() => {
+        if (parsed.value.userId) return parsed.value.userId;
+        const owner = props.instance?.ownerId;
+        return owner && !owner.startsWith('grp_') ? owner : null;
+    });
+
+    const userStore = useUserStore();
+    const fetchedCreator = ref(null);
+
+    watch(
+        ownerId,
+        (id) => {
+            if (!id || userStore.cachedUsers.has(id) || fetchedCreator.value?.id === id) return;
+            userRequest
+                .getUser({ userId: id })
+                .then((args) => {
+                    if (args?.ref?.id === id) fetchedCreator.value = args.ref;
+                })
+                .catch(() => {});
+        },
+        { immediate: true }
+    );
+
+    const creator = computed(() => {
+        const id = ownerId.value;
+        if (!id) return null;
+        const user = userStore.cachedUsers.get(id) ?? (fetchedCreator.value?.id === id ? fetchedCreator.value : null);
+        return { id, ref: user ?? null, name: user?.displayName };
+    });
+
     const currentLocation = computed(() => lastLocation.value?.location ?? '');
 
     const thumbnailUrl = computed(() => {

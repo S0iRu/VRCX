@@ -23,7 +23,7 @@
                         ><Spinner v-if="isTraveling" class="mr-1" /><Timer :epoch="epoch"
                     /></span>
                 </div>
-                <span class="block truncate text-xs">{{ friend.ref?.statusDescription || '&nbsp;' }}</span>
+                <span class="block truncate text-xs">{{ subtitle || friend.ref?.statusDescription || '&nbsp;' }}</span>
             </div>
         </div>
     </UserContextMenu>
@@ -52,7 +52,9 @@
         friend: { type: Object, required: true },
         isFavorite: { type: Boolean, default: false },
         isOwner: { type: Boolean, default: false },
-        showTimer: { type: Boolean, default: true }
+        showTimer: { type: Boolean, default: true },
+        // replaces the status message on the second line (e.g. "Instance Creator")
+        subtitle: { type: String, default: '' }
     });
 
     const { hideNicknames, sidebarCosmetics } = storeToRefs(useAppearanceSettingsStore());
