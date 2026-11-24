@@ -116,4 +116,27 @@ describe('useVRCXUpdaterStore.loadBranchVersions (fork build)', () => {
             expect.objectContaining({ url: 'https://api.github.com/repos/S0iRu/VRCX/releases' })
         );
     });
+
+    test('orders the release dropdown by version number', async () => {
+        const release = (n) => ({
+            name: `VRCX 2026.11.14.${n}`,
+            tag_name: `v2026.11.14.${n}`,
+            prerelease: false,
+            assets: [{ state: 'uploaded' }]
+        });
+        globalThis.webApiService.execute.mockResolvedValueOnce({
+            status: 200,
+            data: JSON.stringify([release(9), release(10), release(8)])
+        });
+        const store = useVRCXUpdaterStore();
+
+        await store.loadBranchVersions();
+
+        expect(store.VRCXUpdateDialog.releases.map((r) => r.tag_name)).toEqual([
+            'v2026.11.14.10',
+            'v2026.11.14.9',
+            'v2026.11.14.8'
+        ]);
+        expect(store.VRCXUpdateDialog.release).toBe('VRCX 2026.11.14.10');
+    });
 });

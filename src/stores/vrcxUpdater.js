@@ -4,7 +4,7 @@ import { toast } from 'vue-sonner';
 import { useI18n } from 'vue-i18n';
 
 import { logWebRequest } from '../services/appConfig';
-import { FORK_BRANCH, FORK_BUILD, branches, isNewerRelease } from '../shared/constants';
+import { FORK_BRANCH, FORK_BUILD, branches, compareReleaseNames, isNewerRelease } from '../shared/constants';
 import { getWhatsNewRelease, normalizeReleaseVersion } from '../shared/constants/whatsNewReleases';
 import { changeLogRemoveLinks } from '../shared/utils';
 
@@ -425,6 +425,11 @@ export const useVRCXUpdaterStore = defineStore('VRCXUpdater', () => {
                     break assetLoop;
                 }
             }
+        }
+        if (FORK_BUILD) {
+            // GitHub doesn't list releases strictly newest first (v…14.9 came
+            // before v…14.10), so order the dropdown by version number.
+            releases.sort((a, b) => compareReleaseNames(b.name, a.name));
         }
         D.releases = releases;
         D.release = releases[0]?.name ?? '';
